@@ -1,287 +1,237 @@
-/*
- * Copyright (c) 1993-1997, Silicon Graphics, Inc.
- * ALL RIGHTS RESERVED
- * Permission to use, copy, modify, and distribute this software for
- * any purpose and without fee is hereby granted, provided that the above
- * copyright notice appear in all copies and that both the copyright notice
- * and this permission notice appear in supporting documentation, and that
- * the name of Silicon Graphics, Inc. not be used in advertising
- * or publicity pertaining to distribution of the software without specific,
- * written prior permission.
- *
- * THE MATERIAL EMBODIED ON THIS SOFTWARE IS PROVIDED TO YOU "AS-IS"
- * AND WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED OR OTHERWISE,
- * INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY OR
- * FITNESS FOR A PARTICULAR PURPOSE.  IN NO EVENT SHALL SILICON
- * GRAPHICS, INC.  BE LIABLE TO YOU OR ANYONE ELSE FOR ANY DIRECT,
- * SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY
- * KIND, OR ANY DAMAGES WHATSOEVER, INCLUDING WITHOUT LIMITATION,
- * LOSS OF PROFIT, LOSS OF USE, SAVINGS OR REVENUE, OR THE CLAIMS OF
- * THIRD PARTIES, WHETHER OR NOT SILICON GRAPHICS, INC.  HAS BEEN
- * ADVISED OF THE POSSIBILITY OF SUCH LOSS, HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE
- * POSSESSION, USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * US Government Users Restricted Rights
- * Use, duplication, or disclosure by the Government is subject to
- * restrictions set forth in FAR 52.227.19(c)(2) or subparagraph
- * (c)(1)(ii) of the Rights in Technical Data and Computer Software
- * clause at DFARS 252.227-7013 and/or in similar or successor
- * clauses in the FAR or the DOD or NASA FAR Supplement.
- * Unpublished-- rights reserved under the copyright laws of the
- * United States.  Contractor/manufacturer is Silicon Graphics,
- * Inc., 2011 N.  Shoreline Blvd., Mountain View, CA 94039-7311.
- *
- * OpenGL(R) is a registered trademark of Silicon Graphics, Inc.
+/**
+ *  teaambient.c
+ *  This program renders three lighted, shaded teapots, with
+ *  different ambient values.
  */
-
- /*
-  * robot.c
-  * This program shows how to composite modeling transformations
-  * to draw translated and rotated hierarchical models.
-  * Interaction:  pressing the s and e keys (shoulder and elbow)
-  * alters the rotation of the robot arm.
-  */
-#include <GL/glut.h>
 #include <stdlib.h>
+#include <GL/glut.h>
 
-static int shoulder = 0, elbow = 0, hand = 0, finger_1 = 0, finger_2 = 0, finger_3 = 0, finger_4 = 0, thumb = 0;
 
-void init(void)
+//Global variables
+static int elevation = 0, swing = 0;
+static int mouse_x, mouse_y;
+bool is_dragging = false;
+bool grid_on = false;
+
+
+ /*  Initialize light source and lighting model.
+  */
+void
+myinit(void)
 {
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-	glShadeModel(GL_FLAT);
+	GLfloat light_ambient[] =
+	{ 0.0, 0.0, 0.0, 1.0 };
+	GLfloat light_diffuse[] =
+	{ 1.0, 1.0, 1.0, 1.0 };
+	GLfloat light_specular[] =
+	{ 1.0, 1.0, 1.0, 1.0 };
+	/* light_position is NOT default value */
+	GLfloat light_position[] =
+	{ 1.0, 1.0, 0.0, 0.0 };
+	GLfloat global_ambient[] =
+	{ 0.75, 0.75, 0.75, 1.0 };
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+
+	glFrontFace(GL_CW);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_AUTO_NORMAL);
+	glEnable(GL_NORMALIZE);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_DEPTH_TEST);
 }
 
-void display(void)
+void
+display(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
+	GLfloat low_ambient[] =
+	{ 0.1, 0.1, 0.1, 1.0 };
+	GLfloat more_ambient[] =
+	{ 0.4, 0.4, 0.4, 1.0 };
+	GLfloat most_ambient[] =
+	{ 1.0, 1.0, 1.0, 1.0 };
 
-	//SHOULDER
-	glPushMatrix();
-	glTranslatef(-1.0, 0.0, 0.0);
-	glRotatef((GLfloat)shoulder, 0.0, 0.0, 1.0);
-	glTranslatef(1.0, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(2.0, 0.5, 1.0);
-	glutWireCube(1.0);
-	glPopMatrix();
+	glEnable(GL_COLOR_MATERIAL);
+	glColor3f(0.8, 0.19, 0.18); // Nice Red
 
-	//ELBOW
-	glTranslatef(1.0, 0.0, 0.0);
-	glRotatef((GLfloat)elbow, 0.0, 0.0, 1.0);
-	glTranslatef(1.0, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(2.0, 0.5, 1.0);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	//WRIST
-	glTranslatef(1.0, 0.0, 0.0);
-	glRotatef((GLfloat)hand, 0.0, 0.0, 1.0);
-	glTranslatef(0.5, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(1.0, 0.5, 1.0);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	//FINGER 1 - PINKY
-	glPushMatrix();
-	glTranslatef(0.5, -0.1, 0.0);
-	glRotatef((GLfloat)finger_1, 0.0, 0.0, 1.0);
-	glTranslatef(0.2, 0.0, 0.5);
-	glPushMatrix();
-	glScalef(0.4, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	glTranslatef(0.2, 0.0, 0.0);
-	glRotatef((GLfloat)finger_1, 0.0, 0.0, 1.0);
-	glTranslatef(0.1, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(0.2, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-	glPopMatrix();
-
-	//FINGER 2 - RING FINGER
-	glPushMatrix();
-	glTranslatef(0.5, -0.1, -0.2);
-	glRotatef((GLfloat)finger_2, 0.0, 0.0, 1.0);
-	glTranslatef(0.2, 0.0, 0.5);
-	glPushMatrix();
-	glScalef(0.4, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	glTranslatef(0.2, 0.0, 0.0);
-	glRotatef((GLfloat)finger_2, 0.0, 0.0, 1.0);
-	glTranslatef(0.15, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(0.3, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-	glPopMatrix();
-
-	//FINGER 3 - MIDDLE FINGER
-	glPushMatrix();
-	glTranslatef(0.5, -0.1, -0.4);
-	glRotatef((GLfloat)finger_3, 0.0, 0.0, 1.0);
-	glTranslatef(0.2, 0.0, 0.5);
-	glPushMatrix();
-	glScalef(0.4, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	glTranslatef(0.2, 0.0, 0.0);
-	glRotatef((GLfloat)finger_3, 0.0, 0.0, 1.0);
-	glTranslatef(0.2, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(0.4, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-	glPopMatrix();
-
-	//FINGER 4 - POINTER
-	glPushMatrix();
-	glTranslatef(0.5, -0.1, -0.6);
-	glRotatef((GLfloat)finger_4, 0.0, 0.0, 1.0);
-	glTranslatef(0.2, 0.0, 0.5);
-	glPushMatrix();
-	glScalef(0.4, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	glTranslatef(0.2, 0.0, 0.0);
-	glRotatef((GLfloat)finger_4, 0.0, 0.0, 1.0);
-	glTranslatef(0.15, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(0.3, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-	glPopMatrix();
-
-	//THUMB
-	glPushMatrix();
-	glTranslatef(0.5, 0.15, -0.8);
-	glRotatef((GLfloat)thumb, 0.0, 0.0, 1.0);
-	glTranslatef(0.15, 0.0, 0.5);
-	glPushMatrix();
-	glScalef(0.3, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-
-	glTranslatef(0.15, 0.0, 0.0);
-	glRotatef((GLfloat)thumb, 0.0, 0.0, 1.0);
-	glTranslatef(0.1, 0.0, 0.0);
-	glPushMatrix();
-	glScalef(0.2, 0.1, 0.1);
-	glutWireCube(1.0);
-	glPopMatrix();
-	glPopMatrix();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
+	/*  material has moderate ambient reflection */
+	glMaterialfv(GL_FRONT, GL_AMBIENT, more_ambient);
+
+
+	glPushMatrix();
+	glLoadIdentity();
+	gluLookAt(0, 0, 10, 0, 0, -1, 0, 1, 0); //Check the last three values? Cross product?
+
+	//Elevation
+	glRotatef(elevation, 1, 0, 0);
+
+	//Swing
+	glRotatef(swing, 0, 1, 0);
+
+	//Show Teapot
+	glutSolidTeapot(1.0);
+
+	//Draw Gridlines
+	if (grid_on)
+	{
+		glLineWidth(1);
+		glBegin(GL_LINES);
+
+		glColor3f(0.5, 0.5, 0.5);//grey lines
+		
+		for (float i = -2; i <= 2.2; i += 0.2f)
+		{
+			// X-Y Plane
+			glVertex3f(i, 2, 0);
+			glVertex3f(i, -2, 0);
+
+			glVertex3f(2, i, 0);
+			glVertex3f(-2, i, 0);
+
+			// X-Z Plane
+			glVertex3f(i, 0, 2);
+			glVertex3f(i, 0, -2);
+
+			glVertex3f(2, 0, i);
+			glVertex3f(-2, 0, i);
+
+			// Y-Z Plane
+			glVertex3f(0, i, 2);
+			glVertex3f(0, i, -2);
+
+			glVertex3f(0, 2, i);
+			glVertex3f(0, -2, i);
+		}
+
+		glEnd();
+	}
+	
 	glPopMatrix();
+
+	glFlush();
+
 	glutSwapBuffers();
 }
 
-void reshape(int w, int h)
+// Get the x and y coordinates of initial click and set dragging to true/false
+void mouse(GLint button, GLint state, int x, int y)
 {
-	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(65.0, (GLfloat)w / (GLfloat)h, 1.0, 20.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glTranslatef(0.0, 0.0, -5.0);
+	// if left button is down, set dragging to true. We also want the x and y coordinates
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		is_dragging = true;
+		mouse_x = x;
+		mouse_y = y;
+	}
+
+	// if we release the left button, set dragging to false
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_UP)
+	{
+		is_dragging = false;
+	}
 }
 
+
+// To calculate the swing and elevation
+void motion(int x, int y)
+{
+	if (is_dragging)
+	{
+		glEnable(GL_COLOR_LOGIC_OP);
+
+		// Elevation
+		elevation += mouse_y - y;
+
+		// Swing
+		swing += mouse_x - x;
+		
+		glutPostRedisplay();
+
+		//update old values so the motion is smooth
+		mouse_x = x;
+		mouse_y = y;
+
+		glDisable(GL_COLOR_LOGIC_OP);
+	}
+
+	glFlush();
+}
+
+
+// Menu system to toggle grid on and off, and to quit the program
+void main_menu_select(int value)
+{
+	if (value == 1)
+	{
+		grid_on = !grid_on;
+		glutPostRedisplay();
+	}
+	else if (value == 0)
+	{
+		exit(0);
+	}
+}
+
+
+//Press escape to exit the program
 void keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 's':
-		shoulder = (shoulder + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'S':
-		shoulder = (shoulder - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'e':
-		elbow = (elbow + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'E':
-		elbow = (elbow - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'h':
-		hand = (hand + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'H':
-		hand = (hand - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '1':
-		finger_1 = (finger_1 + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '!':
-		finger_1 = (finger_1 - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '2':
-		finger_2 = (finger_2 + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '@':
-		finger_2 = (finger_2 - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '3':
-		finger_3 = (finger_3 + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '#':
-		finger_3 = (finger_3 - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '4':
-		finger_4 = (finger_4 + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case '$':
-		finger_4 = (finger_4 - 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 't':
-		thumb = (thumb + 5) % 360;
-		glutPostRedisplay();
-		break;
-	case 'T':
-		thumb = (thumb - 5) % 360;
-		glutPostRedisplay();
-		break;
 	case 27:
 		exit(0);
-		break;
-	default:
 		break;
 	}
 }
 
-int main(int argc, char** argv)
+
+//Reshaping the window
+void
+myReshape(int w, int h)
+{
+	glViewport(0, 0, w, h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(30, (GLfloat)w / (GLfloat)h, 1, 30.0);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+
+
+/*  Main Loop
+ *  Open window with initial window size, title bar,
+ *  RGBA display mode, and handle input events.
+ */
+int
+main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(1200, 500);
-	glutInitWindowPosition(100, 100);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(500, 500);
 	glutCreateWindow(argv[0]);
-	init();
+
+	myinit();
+
+	glutReshapeFunc(myReshape);
 	glutDisplayFunc(display);
-	glutReshapeFunc(reshape);
+
 	glutKeyboardFunc(keyboard);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
+
+	glutCreateMenu(main_menu_select);
+	glutAddMenuEntry("Toggle Grid", 1);
+	glutAddMenuEntry("Quit", 0);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+
 	glutMainLoop();
-	return 0;
+	return 0;             /* ANSI C requires main to return int. */
 }
