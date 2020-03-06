@@ -76,10 +76,7 @@ display(void)
 	glMaterialfv(GL_FRONT, GL_AMBIENT, more_ambient);
 
 
-	//glPushMatrix();
 	glLoadIdentity();
-	//gluLookAt(0, 0, 10, 0, 0, 0, 0, 1, 0); //Check the last three values? Cross product?
-
 
 
 	// Calculate the camera position using the distance and angles
@@ -99,13 +96,6 @@ display(void)
 		0.0, 0.0, 0.0,    // Look at point
 		up_v[0], up_v[1], up_v[2]);   // Up vector
 
-
-
-	//Elevation
-	//glRotatef(elevation, 1, 0, 0);
-
-	//Swing
-	//glRotatef(swing, 0, 1, 0);
 
 	//Show Teapot
 	glutSolidTeapot(1.0);
@@ -144,8 +134,6 @@ display(void)
 
 		glEnd();
 	}
-
-	//glPopMatrix();
 
 	glFlush();
 
